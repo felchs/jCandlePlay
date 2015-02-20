@@ -89,6 +89,8 @@ public class CandlePlay {
 	 */
 	private double timeAcceleration = 1;
 	
+	private double timePosition = 0;
+	
 	/**
 	 * The play thread that handles the candles input for drawing
 	 */
@@ -146,14 +148,43 @@ public class CandlePlay {
 		setupRightScroll(container);
 		setupBottomScroll(container);
 		
-		setupSlider(container);
+		setupSliderTimeVelocity(container);
+		
+		setupSliderTimePosition(container);
+	}
+	
+	private void setupSliderTimePosition(Container pane) {
+		final int minAcceleration = 1;
+		final int initialAcceleration = 1;
+		final int maxAcceleration = 100;
+		JSlider timeAccelerationSlider = new JSlider(JSlider.HORIZONTAL, minAcceleration, maxAcceleration, initialAcceleration);
+		timeAccelerationSlider.addChangeListener(new ChangeListener() {
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				JSlider source = (JSlider)e.getSource();
+				if (!source.getValueIsAdjusting()) {
+					timePosition = source.getValue() / 100f;
+					
+					internalAnimatedAccumTime = (long)((tickList.get(tickList.size() - 1).timestamp - tickList.get(0).timestamp) * timePosition);
+				}
+			}
+		});
+		timeAccelerationSlider.setMajorTickSpacing(10);
+		timeAccelerationSlider.setMinorTickSpacing(1);
+		//timeAccelerationSlider.setPaintTicks(true);
+		//timeAccelerationSlider.setPaintLabels(true);
+		timeAccelerationSlider.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+		Font font = new Font("Arial", Font.PLAIN, 12);
+		timeAccelerationSlider.setFont(font);
+		graph.add(timeAccelerationSlider);
+		timeAccelerationSlider.setAlignmentY(0.1f);
 	}
 
 	/**
 	 * It sets up the graph's acceleration slider
 	 * @param pane the container to put the slider
 	 */
-	private void setupSlider(Container pane) {
+	private void setupSliderTimeVelocity(Container pane) {
 		final int minAcceleration = 1;
 		final int initialAcceleration = 1;
 		final int maxAcceleration = 100;
