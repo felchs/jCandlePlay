@@ -108,7 +108,7 @@ public class CandlePlay {
 
 	/**
 	 * The interval of the candle
-	 * It initializes with one second
+	 * It initializes with one minute
 	 */
 	private long internalIntervalCandle = 1000 * 60;
 
@@ -382,6 +382,7 @@ public class CandlePlay {
 		for (Tick tick : tickList) {
 			if (tick.timestamp <= initialTime + internalAnimatedAccumTime) {
 				long timeCandle = tick.timestamp - tick.timestamp % internalIntervalCandle;
+				//System.out.println("timeCandle: " + GraphDateUtils.longToStrDate(timeCandle) + ", tick.timestamp: " + GraphDateUtils.longToStrDate(tick.timestamp));
 				Candle candleOnMap = candleMap.get(timeCandle);
 				if (candleOnMap == null) {
 					candleOnMap = new Candle();
