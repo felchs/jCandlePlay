@@ -1,8 +1,7 @@
 /*
- * This source file is part of Grideasy
- * For the latest info, see https://code.google.com/p/grideasy/
+ * This source file is part of jCandlePlay
  * 
- * Grideasy is free software: you can redistribute it
+ * jCandlePlay is free software: you can redistribute it
  * and/or modify it under the terms of the MIT License.
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -31,6 +30,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Label;
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
 import java.util.Collection;
@@ -89,6 +89,9 @@ public class CandlePlay {
 	 */
 	private double timeAcceleration = 1;
 	
+	/**
+	 * 
+	 */
 	private double timePosition = 0;
 	
 	/**
@@ -111,6 +114,11 @@ public class CandlePlay {
 	 * It initializes with one minute
 	 */
 	private long internalIntervalCandle = 1000 * 60;
+	
+	/**
+	 * Factor for using when setting the max range of candles to be displayed
+	 */
+	private int numCandlesNFactor = 3;
 
 	/**
 	 * Constructor passing fields
@@ -143,6 +151,7 @@ public class CandlePlay {
     	this.graph = new GraphPanel(width, height);
 		
 		graph.setPreferredSize(new Dimension(width, height));
+		graph.setLayout(null);
 		container.add(graph, BorderLayout.CENTER);
 		
 		setupRightScroll(container);
@@ -157,27 +166,32 @@ public class CandlePlay {
 		final int minAcceleration = 1;
 		final int initialAcceleration = 1;
 		final int maxAcceleration = 100;
-		JSlider timeAccelerationSlider = new JSlider(JSlider.HORIZONTAL, minAcceleration, maxAcceleration, initialAcceleration);
-		timeAccelerationSlider.addChangeListener(new ChangeListener() {
+		JSlider timePositionSlider = new JSlider(JSlider.HORIZONTAL, minAcceleration, maxAcceleration, initialAcceleration);
+		timePositionSlider.addChangeListener(new ChangeListener() {
 			@Override
 			public void stateChanged(ChangeEvent e) {
 				JSlider source = (JSlider)e.getSource();
 				if (!source.getValueIsAdjusting()) {
 					timePosition = source.getValue() / 100f;
 					
-					internalAnimatedAccumTime = (long)((tickList.get(tickList.size() - 1).timestamp - tickList.get(0).timestamp) * timePosition);
+					//internalAnimatedAccumTime = (long)((tickList.get(tickList.size() - 1).timestamp - tickList.get(0).timestamp) * timePosition);
 				}
 			}
 		});
-		timeAccelerationSlider.setMajorTickSpacing(10);
-		timeAccelerationSlider.setMinorTickSpacing(1);
+		timePositionSlider.setMajorTickSpacing(10);
+		timePositionSlider.setMinorTickSpacing(1);
 		//timeAccelerationSlider.setPaintTicks(true);
 		//timeAccelerationSlider.setPaintLabels(true);
-		timeAccelerationSlider.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
-		Font font = new Font("Arial", Font.PLAIN, 12);
-		timeAccelerationSlider.setFont(font);
-		graph.add(timeAccelerationSlider);
-		timeAccelerationSlider.setAlignmentY(0.1f);
+		timePositionSlider.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+		Font font = new Font("Arial", Font.PLAIN, 10);
+		timePositionSlider.setFont(font);
+		graph.add(timePositionSlider);
+		timePositionSlider.setBounds(0, 30, 120, 25);
+		
+		Label label = new Label("Posição no Tempo", Label.CENTER);
+		label.setFont(font);
+		graph.add(label);
+		label.setBounds(0, 50, 120, 20);
 	}
 
 	/**
@@ -203,10 +217,16 @@ public class CandlePlay {
 		//timeAccelerationSlider.setPaintTicks(true);
 		//timeAccelerationSlider.setPaintLabels(true);
 		timeAccelerationSlider.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
-		Font font = new Font("Arial", Font.PLAIN, 12);
+		Font font = new Font("Arial", Font.PLAIN, 10);
 		timeAccelerationSlider.setFont(font);
 		graph.add(timeAccelerationSlider);
-		timeAccelerationSlider.setAlignmentY(0.1f);
+		timeAccelerationSlider.setBounds(130, 30, 120, 25);
+		
+		Label label = new Label("Aceleração do tempo", Label.CENTER);
+		label.setFont(font);
+		graph.add(label);
+		label.setBounds(130, 50, 120, 20);
+
 	}
 
 	/**
@@ -314,9 +334,9 @@ public class CandlePlay {
 								int range = toIndex - fromIndexWithZoom;
 								
 								int middleIdx = (int) (tickList.size() * graph.getHorizontalOffset());
-								int rangeBy2 = (int) (range / 2f);
-								int toIndexWithOffset = middleIdx + rangeBy2;
-								int fromIndexWithOffset = middleIdx - rangeBy2;
+								int rangeByN = (int) (range / numCandlesNFactor);
+								int toIndexWithOffset = middleIdx + rangeByN;
+								int fromIndexWithOffset = middleIdx - rangeByN;
 								
 								if (fromIndexWithOffset < fromIndex) {
 									fromIndexWithOffset = fromIndex;
@@ -325,7 +345,7 @@ public class CandlePlay {
 									toIndexWithOffset = toIndex;
 								}
 								
-								//System.out.println("middleIdx: " + middleIdx + ", rangeBy2: " + rangeBy2 + ", fromIndexWithOffset: " + fromIndexWithOffset + ", toIndexWithOffset: " + toIndexWithOffset);
+								System.out.println("toIndexWithOffset: " + toIndexWithOffset);
 								
 								tickListFiltered = tickList.subList(fromIndexWithOffset, toIndexWithOffset);
 							}
@@ -382,7 +402,7 @@ public class CandlePlay {
 		for (Tick tick : tickList) {
 			if (tick.timestamp <= initialTime + internalAnimatedAccumTime) {
 				long timeCandle = tick.timestamp - tick.timestamp % internalIntervalCandle;
-				//System.out.println("timeCandle: " + GraphDateUtils.longToStrDate(timeCandle) + ", tick.timestamp: " + GraphDateUtils.longToStrDate(tick.timestamp));
+
 				Candle candleOnMap = candleMap.get(timeCandle);
 				if (candleOnMap == null) {
 					candleOnMap = new Candle();
@@ -401,7 +421,7 @@ public class CandlePlay {
 		Collection<Candle> candleCollection = candleMap.values();
 		List<Candle> candleList = new Vector<Candle>();
 		for (Candle candle : candleCollection) {
-			candleList.add(candle);			
+			candleList.add(candle);
 		}
 			
 		return candleList;

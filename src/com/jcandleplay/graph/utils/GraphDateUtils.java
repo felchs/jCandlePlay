@@ -1,8 +1,7 @@
 /*
- * This source file is part of Grideasy
- * For the latest info, see https://code.google.com/p/grideasy/
+ * This source file is part of jCandlePlay
  * 
- * Grideasy is free software: you can redistribute it
+ * jCandlePlay is free software: you can redistribute it
  * and/or modify it under the terms of the MIT License.
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
