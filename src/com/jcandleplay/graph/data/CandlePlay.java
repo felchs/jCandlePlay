@@ -107,7 +107,7 @@ public class CandlePlay {
 	/**
 	 * The internal variable to handle accumulated time since last candle draw
 	 */
-	private long internalAnimatedAccumTime = 0;
+	private long internalAnimatedAccumTime = 7258122061000l;
 
 	/**
 	 * The interval of the candle
@@ -118,7 +118,7 @@ public class CandlePlay {
 	/**
 	 * Factor for using when setting the max range of candles to be displayed
 	 */
-	private int numCandlesNFactor = 3;
+	private int numCandlesNFactor = 0;
 
 	/**
 	 * Constructor passing fields
@@ -163,10 +163,10 @@ public class CandlePlay {
 	}
 	
 	private void setupSliderTimePosition(Container pane) {
-		final int minAcceleration = 1;
-		final int initialAcceleration = 1;
-		final int maxAcceleration = 100;
-		JSlider timePositionSlider = new JSlider(JSlider.HORIZONTAL, minAcceleration, maxAcceleration, initialAcceleration);
+		final int minTime = 1;
+		final int initialTime = 100;
+		final int maxTime = 100;
+		JSlider timePositionSlider = new JSlider(JSlider.HORIZONTAL, minTime, maxTime, initialTime);
 		timePositionSlider.addChangeListener(new ChangeListener() {
 			@Override
 			public void stateChanged(ChangeEvent e) {
@@ -333,19 +333,24 @@ public class CandlePlay {
 								
 								int range = toIndex - fromIndexWithZoom;
 								
-								int middleIdx = (int) (tickList.size() * graph.getHorizontalOffset());
-								int rangeByN = (int) (range / numCandlesNFactor);
-								int toIndexWithOffset = middleIdx + rangeByN;
-								int fromIndexWithOffset = middleIdx - rangeByN;
+								int fromIndexWithOffset = fromIndex;
+								int toIndexWithOffset = toIndex;
 								
-								if (fromIndexWithOffset < fromIndex) {
-									fromIndexWithOffset = fromIndex;
-								}
-								if (toIndexWithOffset > toIndex) {
-									toIndexWithOffset = toIndex;
+								if (numCandlesNFactor > 0) {
+									int middleIdx = (int) (tickList.size() * graph.getHorizontalOffset());
+									int rangeByN = (int) (range / numCandlesNFactor);
+									toIndexWithOffset = middleIdx + rangeByN;
+									fromIndexWithOffset = middleIdx - rangeByN;
+									
+									if (fromIndexWithOffset < fromIndex) {
+										fromIndexWithOffset = fromIndex;
+									}
+									if (toIndexWithOffset > toIndex) {
+										toIndexWithOffset = toIndex;
+									}
 								}
 								
-								System.out.println("toIndexWithOffset: " + toIndexWithOffset);
+								//System.out.println("toIndexWithOffset: " + toIndexWithOffset);
 								
 								tickListFiltered = tickList.subList(fromIndexWithOffset, toIndexWithOffset);
 							}
