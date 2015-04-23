@@ -33,6 +33,7 @@ import java.awt.GridBagLayout;
 import java.awt.Label;
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.SortedMap;
@@ -46,6 +47,7 @@ import javax.swing.JSlider;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import com.jcandleplay.graph.CustomScrollBarUI;
 import com.jcandleplay.graph.GraphPanel;
 import com.jcandleplay.graph.PlayThreadStatus;
 
@@ -62,7 +64,7 @@ public class CandlePlay {
 	 * Container to add graph compoenents
 	 */
 	private Container container;
-		
+	
 	/**
 	 * The data tick list 
 	 */
@@ -107,18 +109,20 @@ public class CandlePlay {
 	/**
 	 * The internal variable to handle accumulated time since last candle draw
 	 */
-	private long internalAnimatedAccumTime = 7258122061000l;
+	private long internalAnimatedAccumTime = 0;
+	
+	private long initialTime = 0;
 
 	/**
 	 * The interval of the candle
 	 * It initializes with one minute
 	 */
-	private long internalIntervalCandle = 1000 * 60;
+	private final long internalIntervalCandle = 1000 * 60;
 	
 	/**
 	 * Factor for using when setting the max range of candles to be displayed
 	 */
-	private int numCandlesNFactor = 0;
+//	private int numCandlesNFactor = 4;
 
 	/**
 	 * Constructor passing fields
@@ -163,18 +167,22 @@ public class CandlePlay {
 	}
 	
 	private void setupSliderTimePosition(Container pane) {
-		final int minTime = 1;
-		final int initialTime = 100;
-		final int maxTime = 100;
-		JSlider timePositionSlider = new JSlider(JSlider.HORIZONTAL, minTime, maxTime, initialTime);
+		final int minTimePosition = 1;
+		final int initialTimePosition = 1;
+		final int maxAcceleration = 100;
+		JSlider timePositionSlider = new JSlider(JSlider.HORIZONTAL, minTimePosition, maxAcceleration, initialTimePosition);
 		timePositionSlider.addChangeListener(new ChangeListener() {
 			@Override
 			public void stateChanged(ChangeEvent e) {
 				JSlider source = (JSlider)e.getSource();
 				if (!source.getValueIsAdjusting()) {
 					timePosition = source.getValue() / 100f;
-					
-					//internalAnimatedAccumTime = (long)((tickList.get(tickList.size() - 1).timestamp - tickList.get(0).timestamp) * timePosition);
+					if (tickList.size() > 0) {
+						long lastTick = tickList.get(tickList.size() - 1).timestamp;
+						long firstTick = tickList.get(0).timestamp;
+						internalAnimatedAccumTime = (long)((lastTick - firstTick) * timePosition);
+						initialTime = firstTick;
+					}
 				}
 			}
 		});
@@ -239,6 +247,7 @@ public class CandlePlay {
 	    GridBagConstraints c = new GridBagConstraints();
 	 
 	    JScrollBar scrollOffset = new JScrollBar(JScrollBar.HORIZONTAL, 0, 0, 0, 100);
+	    scrollOffset.setUI(new CustomScrollBarUI(15, 15));
 	    c.weightx = 0.9;
 	    c.fill = GridBagConstraints.HORIZONTAL;
 	    panel.add(scrollOffset, c);
@@ -251,6 +260,7 @@ public class CandlePlay {
 		});
 
 	    JScrollBar scrollZoom = new JScrollBar(JScrollBar.HORIZONTAL, 100, 0, 1, 100);
+	    scrollZoom.setUI(new CustomScrollBarUI(15, 15));
 	    c.fill = GridBagConstraints.HORIZONTAL;
 	    c.weightx = 0.1;
 	    panel.add(scrollZoom, c);
@@ -275,6 +285,7 @@ public class CandlePlay {
 	    GridBagConstraints c = new GridBagConstraints();
 	 
 	    JScrollBar scrollOffset = new JScrollBar(JScrollBar.VERTICAL, 0, 0, 0, 100);
+	    scrollOffset.setUI(new CustomScrollBarUI(13, 16, true));
 	    c.weighty = 0.85;
 	    c.fill = GridBagConstraints.VERTICAL;
 	    panel.add(scrollOffset, c);
@@ -287,6 +298,7 @@ public class CandlePlay {
 		});
 	    
 	    JScrollBar scrollZoom = new JScrollBar(JScrollBar.VERTICAL, 0, 0, 0, 100);
+	    scrollZoom.setUI(new CustomScrollBarUI(14, 16, true));
 	    c.fill = GridBagConstraints.VERTICAL;
 	    c.gridy = 1;
 	    c.weighty = 0.15;
@@ -324,40 +336,29 @@ public class CandlePlay {
 				while (playThreadStatus != PlayThreadStatus.INACTIVATED) {
 					if (playThreadStatus == PlayThreadStatus.PLAYING) {
 						if (tickList != null && !tickList.isEmpty()) {
+							
+							if (initialTime == 0) {
+								initialTime = tickList.get(0).timestamp;
+							}
 							List<Tick> tickListFiltered = new Vector<>();
 							
 							{ // updates the current initial time and window by horizontal zoom and offset
-								int fromIndexWithZoom = ((tickList.size() - 1) - (int) ((tickList.size() - 1) * graph.getHorizontalZoom()));
-								int fromIndex = 0;
-								int toIndex = tickList.size() - 1;
+								int window = 2000;
+								int numTicks = getTickListFilteringAccuTime(tickList).size() - window;
+								if (numTicks < 0) {
+									tickListFiltered = tickList;
+								} else {
+									int finalTick = window + (int) (numTicks * graph.getHorizontalOffset());
+									int initialTick = finalTick - window;
 								
-								int range = toIndex - fromIndexWithZoom;
-								
-								int fromIndexWithOffset = fromIndex;
-								int toIndexWithOffset = toIndex;
-								
-								if (numCandlesNFactor > 0) {
-									int middleIdx = (int) (tickList.size() * graph.getHorizontalOffset());
-									int rangeByN = (int) (range / numCandlesNFactor);
-									toIndexWithOffset = middleIdx + rangeByN;
-									fromIndexWithOffset = middleIdx - rangeByN;
-									
-									if (fromIndexWithOffset < fromIndex) {
-										fromIndexWithOffset = fromIndex;
-									}
-									if (toIndexWithOffset > toIndex) {
-										toIndexWithOffset = toIndex;
-									}
+									tickListFiltered = tickList.subList(initialTick, finalTick);
 								}
-								
-								//System.out.println("toIndexWithOffset: " + toIndexWithOffset);
-								
-								tickListFiltered = tickList.subList(fromIndexWithOffset, toIndexWithOffset);
 							}
 							
 							long currTime = System.currentTimeMillis();
 							long diffFromLastTime = (long) ((currTime - lastTime) * timeAcceleration);
 							List<Candle> dataTickList = getCandleList(diffFromLastTime, tickListFiltered);
+							//List<Candle> dataTickList = getCandleList(diffFromLastTime, tickList);
 							
 							graph.setCandleList(dataTickList);
 							lastTime = currTime;
@@ -372,6 +373,17 @@ public class CandlePlay {
 						}
 					}
 				}
+			}
+
+			private List<Tick> getTickListFilteringAccuTime(List<Tick> tickList) {
+				List<Tick> list = new ArrayList<Tick>();
+				for (Tick tick : tickList) {
+					long timeLimit = initialTime + internalAnimatedAccumTime;
+					if (tick.timestamp <= timeLimit) {
+						list.add(tick);
+					}
+				}
+				return list;
 			}
 		};
 		
@@ -400,17 +412,17 @@ public class CandlePlay {
 		internalAnimatedAccumTime += diffFromLastTime;
 		
 		SortedMap<Long, Candle> candleMap = new TreeMap<Long, Candle>();
-		long initialTime = 0;
-		if (tickList.size() > 0) {
-			initialTime = tickList.get(0).timestamp;
-		}
+		
 		for (Tick tick : tickList) {
-			if (tick.timestamp <= initialTime + internalAnimatedAccumTime) {
+			long timeLimit = initialTime + internalAnimatedAccumTime;
+			
+			if (tick.timestamp <= timeLimit) {
 				long timeCandle = tick.timestamp - tick.timestamp % internalIntervalCandle;
 
 				Candle candleOnMap = candleMap.get(timeCandle);
 				if (candleOnMap == null) {
 					candleOnMap = new Candle();
+					candleOnMap.initDate = timeCandle;
 					candleMap.put(timeCandle, candleOnMap);
 					
 					if (lastTick != null) {
@@ -419,14 +431,32 @@ public class CandlePlay {
 				}
 				
 				candleOnMap.updateCandle(tick);
-				
+				candleOnMap.finalDate = timeCandle + internalIntervalCandle;
 				lastTick = tick;
 			}
 		}
+		
 		Collection<Candle> candleCollection = candleMap.values();
 		List<Candle> candleList = new Vector<Candle>();
+		Candle lastCandle = null;
 		for (Candle candle : candleCollection) {
+			if (lastCandle != null) {
+				long timeDiff = candle.finalDate - lastCandle.finalDate;
+				long numIt = timeDiff / internalIntervalCandle -1;
+				for (long i = 0; i < numIt; i++) {
+					Candle newCandle = new Candle();
+					newCandle.open = lastCandle.close;
+					newCandle.high = lastCandle.close;
+					newCandle.low = lastCandle.close;
+					newCandle.close = lastCandle.close;
+					Tick tick = new Tick(lastCandle.close, candle.finalDate + (internalIntervalCandle * (i + 1)));
+					newCandle.tickList.add(tick);
+					Candle candleCopy = lastCandle.getCopy();
+					candleList.add(candleCopy);
+				}
+			}
 			candleList.add(candle);
+			lastCandle = candle;
 		}
 			
 		return candleList;

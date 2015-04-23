@@ -103,7 +103,7 @@ public class Candle
 		
 		updateCandleValues(tick);
 		
-		this.finalDate = tick.timestamp;
+		//this.finalDate = tick.timestamp;
 	}
 	
 	/**

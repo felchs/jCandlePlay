@@ -151,10 +151,10 @@ public class GraphPanel extends JPanel {
 	
 	/**
 	 * Sets the current candle list to be used when drawing the graph each render step
-	 * @param dataTickList the current candle list to be used when drawing the graph each render step
+	 * @param candleList the current candle list to be used when drawing the graph each render step
 	 */
-	public void setCandleList(List<Candle> dataTickList) {
-		this.candleList = dataTickList;
+	public void setCandleList(List<Candle> candleList) {
+		this.candleList = candleList;
 	}
 	
 	/**
@@ -422,14 +422,17 @@ public class GraphPanel extends JPanel {
 				
 				// draw current cross time line value
 				double percX = mouseX / (double)(width - widthVertLabel);
+				//System.out.println(width + ", widthVert: " + widthVertLabel + ", "+ (width - widthVertLabel) + ", percX: " + percX);
 				
 				g.setColor(lightBlueColor);
 				g.fillRect(mouseX - widthVertLabel, 0, 120, heightTimeLine - 1);
 				g.setColor(Color.LIGHT_GRAY);
 				g.drawRect(mouseX - widthVertLabel, 0, 120, heightTimeLine - 1);
 				
+				// top date
 				long currDate = initialTime + (long)(percX * (finalTime - initialTime));
 				String strDate = GraphDateUtils.longToStrDate(currDate);
+				//System.out.println("|--- initaltime: " + GraphDateUtils.longToStrDate(initialTime) + ", finaltime: " + GraphDateUtils.longToStrDate(finalTime) + ", perc: " + percX + ", " + strDate);
 				g.setColor(Color.BLACK);
 				g.drawString(strDate, mouseX + 3  - widthVertLabel, heightTimeLine - 2);
 

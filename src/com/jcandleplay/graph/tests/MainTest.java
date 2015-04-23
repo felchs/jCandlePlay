@@ -33,6 +33,7 @@ import javax.swing.JFrame;
 import com.jcandleplay.graph.data.Candle;
 import com.jcandleplay.graph.data.CandlePlay;
 import com.jcandleplay.graph.data.Tick;
+import com.jcandleplay.graph.utils.GraphDateUtils;
 
 public class MainTest {
 	
@@ -45,16 +46,19 @@ public class MainTest {
 		// creating tick list
 		List<Tick> tickList = new Vector<>();
 		long currTime = System.currentTimeMillis();
+		long timestamp = 0;
 		for (int i = 0; i < 300; i++) {
 			Candle candle = new Candle();
 			for (int j = 0; j < 60; j++) {
 				double value = 1 + Math.random() * 0.0001 * 5;
-				long timestamp = currTime + i * 1000l * 60l + j * 1000l;
+				timestamp = currTime + i * 1000l * 60l + j * 1000l;
 				Tick tick = new Tick(value, timestamp);
 				tickList.add(tick);
 				candle.updateCandle(tick);
 			}
 		}
+			
+		System.out.println(GraphDateUtils.longToStrDate(timestamp));
 		
 		candlePlay.setTickList(tickList);
 		
